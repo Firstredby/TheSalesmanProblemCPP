@@ -1,0 +1,154 @@
+//---------------------------------------------------------------------------
+#include <vcl.h>
+#include <time.h>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+#pragma hdrstop
+
+#include "Unit3.h"
+//---------------------------------------------------------------------------
+#pragma package(smart_init)
+#pragma resource "*.dfm"
+TForm3 *Form3;
+//---------------------------------------------------------------------------
+__fastcall TForm3::TForm3(TComponent* Owner)
+	: TForm(Owner)
+{
+}
+
+const int INF = 1e9;
+const int MAX = 9; // Максимальное количество городов
+
+struct Node {
+	vector<int> path; // Путь
+    int lowerBound; // Нижняя граница оценки
+    bool operator<(const Node& other) const {
+        return lowerBound > other.lowerBound;
+	}
+};
+
+int** arrCreate(TEdit* Edit1, TStringGrid* StringGrid1) {
+	int** arr = new int*[StrToInt(Edit1->Text)];
+	for (int i = 0; i < StrToInt(Edit1->Text); i++) {
+		arr[i] = new int[StrToInt(Edit1->Text)];
+        for (int j = 0; j < StrToInt(Edit1->Text); j++) {
+			arr[i][j] = StrToInt(StringGrid1->Cells[i+1][j+1]);
+        }
+    }
+    return arr;
+}
+
+void tsp(TEdit* Edit1, TStringGrid* StringGrid1) {
+	int** arr = arrCreate(Edit1, StringGrid1);
+	int n = StrToInt(Edit1->Text); // Количество вершин в графе
+
+    // Создаем двумерный массив для хранения весов ребер
+    vector<vector<int>> graph(n, vector<int>(n));
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+			graph[i][j] = StrToInt(StringGrid1->Cells[i+1][j+1]);
+        }
+    }
+
+    // Создаем массив для хранения номеров вершин пути
+    vector<int> path(n);
+    for (int i = 0; i < n; i++) {
+        path[i] = i;
+    }
+
+    int ans = INF; // Инициализируем длину кратчайшего пути
+	vector<int> best_path; // Вектор для хранения порядка обхода вершин кратчайшего пути
+    // Проходим по всем возможным начальным вершинам
+	do {
+        int cur = 0; // Текущая вершина в пути
+        int sum = 0; // Суммарный вес ребер в пути
+        vector<int> cur_path; // Вектор для хранения порядка обхода вершин в текущем пути
+
+
+        // Проходим по всем вершинам пути, кроме последней
+        for (int i = 0; i < n - 1; i++) {
+            sum += graph[path[i]][path[i+1]]; // Добавляем вес ребра от текущей вершины до следующей
+            cur_path.push_back(path[i]); // Добавляем текущую вершину в порядок обхода
+        }
+        sum += graph[path[n-1]][path[0]]; // Добавляем вес ребра от последней вершины к начальной
+        cur_path.push_back(path[n-1]); // Добавляем последнюю вершину в порядок обхода
+
+        if (sum < ans) { // Если найден новый кратчайший путь
+            ans = sum; // Обновляем значение кратчайшего пути
+            best_path = cur_path; // Сохраняем порядок обхода вершин кратчайшего пути
+        }
+	} while (next_permutation(path.begin(), path.end())); // Генерируем следующую перестановку вершин пути
+
+	AnsiString output = ""; // создаем пустую строку для вывода
+	for (int i = 0; i < n; i++) {
+		output += IntToStr(best_path[i] + 1);
+		if (i < n - 1) { // Если не последний элемент, выводим стрелку
+			output += "->";
+		}
+	}
+
+	ShowMessage("Довжина найкоротшого шляху: " + IntToStr(ans) + "\n" + "Порядок обходу найкоротшого шляху: " + output);
+}
+
+//---------------------------------------------------------------------------
+void __fastcall TForm3::Edit1Change(TObject *Sender)
+{
+	if (Edit1){
+		if (Edit1->Text == "") {
+			for(int i = 1; i <= 10; i++){
+				StringGrid1->Cells[i][0] = "";
+				StringGrid1->Cells[0][i] = "";
+				for(int j = 1; j <= 10; j++){
+					StringGrid1->Cells[i][j] = "";
+				}
+			}
+		return;
+		}
+		int value;
+		try {
+			value = StrToInt(Edit1->Text);
+		}
+		catch (...) {
+			ShowMessage("Будь ласка, вводьте лише числові значення!");
+			Edit1->Text = "";
+			return;
+		}
+		if (value < 3 || value > 9){
+			ShowMessage("Введіть будь-ласка значення від 3 до 9!");
+			Edit1->Text = "";
+			return;
+		}
+		for(int i = 1; i <= Edit1->Text; i++){
+		StringGrid1->Cells[i][0] = "  " + IntToStr(i) + "Д";
+		StringGrid1->Cells[0][i] = "  " + IntToStr(i) + "Д";
+		}
+		for(int i = 1; i <= Edit1->Text; i++){
+			StringGrid1->Cells[i][i] = 0;
+		}
+	}
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm3::Button1Click(TObject *Sender)
+{
+	tsp(Edit1, StringGrid1);
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm3::Button2Click(TObject *Sender)
+{
+	srand (time(NULL));
+	for (int i = 1; i <= StrToInt(Edit1->Text); ++i) {
+		for (int j = 1; j <= StrToInt(Edit1->Text); ++j) {
+			StringGrid1->Cells[i][j] = IntToStr(rand() % 41 + 10);
+		}
+		StringGrid1->Cells[i][i] = 0;
+	}
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm3::Image1Click(TObject *Sender)
+{
+	Image1->SendToBack();
+}
+//---------------------------------------------------------------------------
+
